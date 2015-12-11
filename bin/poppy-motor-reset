@@ -1,0 +1,10 @@
+#!/home/poopeye/pydybot/bin/python
+# EASY-INSTALL-ENTRY-SCRIPT: 'pypot==2.10.1','console_scripts','poppy-motor-reset'
+__requires__ = 'pypot==2.10.1'
+import sys
+from pkg_resources import load_entry_point
+
+if __name__ == '__main__':
+    sys.exit(
+        load_entry_point('pypot==2.10.1', 'console_scripts', 'poppy-motor-reset')()
+    )
