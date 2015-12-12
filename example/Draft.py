@@ -16,16 +16,16 @@ Motors = dxl_io.scan(range(10))
 
 print(Motors)
 
-for i in Motors:
-	dxl_io.set_moving_speed({i: 100})
+# for i in Motors:
+# 	dxl_io.set_moving_speed({i: 100})
 
-dxl_io.set_goal_position({1: 0})
-dxl_io.set_goal_position({3: 90})
-dxl_io.set_goal_position({5: 90})
-dxl_io.set_goal_position({7: 90})
+# dxl_io.set_goal_position({1: 0})
+# dxl_io.set_goal_position({3: 90})
+# dxl_io.set_goal_position({5: 90})
+# dxl_io.set_goal_position({7: 90})
 
-result = dxl_io.get_present_position_speed_load(Motors)
-print(result)
+# result = dxl_io.get_present_position_speed_load(Motors)
+# print(result)
 
 # for position in list(range(-90,90)):
 # 	dxl_io.set_goal_position({1: position})

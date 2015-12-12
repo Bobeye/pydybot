@@ -6,6 +6,18 @@ import itertools
 import time
 import pypot.dynamixel
 
+# Find the motors
+ports = pypot.dynamixel.get_available_ports()
+if not ports:
+    raise IOError('no port found!')
+# print('ports found', ports)
+# print('connecting on the first available port:', ports[0])
+dxl_io = pypot.dynamixel.DxlIO(ports[0])
+Motors = dxl_io.scan(range(10))
+print(Motors)
+for i in Motors:
+    dxl_io.set_moving_speed({i: 100})
+
 
 class SampleListener(Leap.Listener):
     finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
@@ -34,10 +46,6 @@ class SampleListener(Leap.Listener):
     def on_frame(self, controller):
         # Get the most recent frame and report some basic information
         frame = controller.frame()
-        return len(frame.hands)
-
-
-        
 
     def state_string(self, state):
         if state == Leap.Gesture.STATE_START:
@@ -53,42 +61,56 @@ class SampleListener(Leap.Listener):
             return "STATE_INVALID"
 
 
-def main():
-    # Find the motors
-    ports = pypot.dynamixel.get_available_ports()
-    if not ports:
-        raise IOError('no port found!')
-    print('ports found', ports)
-    print('connecting on the first available port:', ports[0])
-    dxl_io = pypot.dynamixel.DxlIO(ports[0])
-    Motors = dxl_io.scan(range(10))
-    print(Motors)
+def MotorSpeed(Motors, speed):
     for i in Motors:
-        dxl_io.set_moving_speed({i: 100})
+        dxl_io.set_moving_speed({i: speed})
 
+def main():
     # Create a sample listener and controller
     listener = SampleListener()
     controller = Leap.Controller()
 
-    l = 0
-    while l != 2:
+    MotorSpeed(Motors, 150)
+    HandsNum = 0
+    while HandsNum != 2:
         # Have the sample listener receive events from the controller
         controller.add_listener(listener)
     
         frame = controller.frame()
-        l = len(frame.hands)
-        print(l)
 
-        if l == 0:
-            dxl_io.set_goal_position({1: 0})
-            dxl_io.set_goal_position({3: 0})
-            dxl_io.set_goal_position({5: 0})
-            dxl_io.set_goal_position({7: 0})
-        else:
-            dxl_io.set_goal_position({1: 0})
-            dxl_io.set_goal_position({3: 90})
-            dxl_io.set_goal_position({5: 90})
-            dxl_io.set_goal_position({7: 0})
+        # for hand in frame.hands:
+        #     for finger in hand.fingers:
+
+        #         print "    %s finger, id: %d, length: %fmm, width: %fmm" % (
+        #             finger.type,
+        #             finger.id,
+        #             finger.length,
+        #             finger.width)
+
+        for gesture in frame.gestures():
+            if gesture.type == Leap.Gesture.TYPE_CIRCLE:
+                circle = CircleGesture(gesture)
+
+                # Determine clock direction using the angle between the pointable and the circle normal
+                if circle.pointable.direction.angle_to(circle.normal) <= Leap.PI/2:
+                    clockwiseness = "clockwise"
+                    dxl_io.set_goal_position({1: 0})
+                    dxl_io.set_goal_position({3: 90})
+                    dxl_io.set_goal_position({5: 90})
+                    dxl_io.set_goal_position({7: 90})
+
+                else:
+                    clockwiseness = "counterclockwise"
+                    dxl_io.set_goal_position({1: 0})
+                    dxl_io.set_goal_position({3: 0})
+                    dxl_io.set_goal_position({5: 0})
+                    dxl_io.set_goal_position({7: 0})
+
+
+
+
+        hand = frame.hands
+        HandsNum = len(frame.hands)
 
 
     # Keep this process running until Enter is pressed
@@ -100,6 +122,9 @@ def main():
     finally:
         # Remove the sample listener when done
         controller.remove_listener(listener)
+
+
+
 
 
 if __name__ == "__main__":
