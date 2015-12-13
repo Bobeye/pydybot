@@ -1,10 +1,11 @@
 import sys
-sys.path.insert(0, "/home/poopeye/pydybot/LeapSDK/lib")
+sys.path.insert(0, "/home/poopeye/pydybot/Packages/LeapSDK/lib")
 import Leap, sys, thread, time
 from Leap import CircleGesture, KeyTapGesture, ScreenTapGesture, SwipeGesture
 import itertools
 import time
 import pypot.dynamixel
+import math
 
 # Find the motors
 ports = pypot.dynamixel.get_available_ports()
@@ -17,6 +18,11 @@ Motors = dxl_io.scan(range(10))
 print(Motors)
 for i in Motors:
     dxl_io.set_moving_speed({i: 100})
+
+
+LastxPalm = 0
+LastyPalm = 0
+LastzPalm = 0
 
 
 class SampleListener(Leap.Listener):
@@ -79,81 +85,61 @@ def main():
     HandsNum = 0
     while HandsNum != 2:
         # Have the sample listener receive events from the controller
-        controller.add_listener(listener)
-    
-        frame = controller.frame()
+        
 
-        # for hand in frame.hands:
-        #     for finger in hand.fingers:
+        xPalm = 0
+        yPalm = 0
+        zPalm = 0
+        for i in list(range(0,5)):
+            controller.add_listener(listener)
+            frame = controller.frame()
+            for hand in frame.hands:
+                xPalm = hand.palm_position[0] + xPalm
+                yPalm = hand.palm_position[1] + yPalm
+                zPalm = hand.palm_position[2] + zPalm
+        xPalm = xPalm // 5
+        yPalm = yPalm // 5
+        zPalm = zPalm // 5
 
-        #         print "    %s finger, id: %d, length: %fmm, width: %fmm" % (
-        #             finger.type,
-        #             finger.id,
-        #             finger.length,
-        #             finger.width)
+        Palm = [xPalm, yPalm, zPalm]
+        LastPalm = [LastxPalm, LastyPalm, LastzPalm]
+        for i in list(range(0,3)):
+            diff = math.fabs(Palm[i] - LastPalm[i])
+            if diff <= 5:
+                Palm = LastPalm
 
-        for hand in frame.hands:
-            xPalm = hand.palm_position[0]
-            yPalm = hand.palm_position[1]
-            zPalm = hand.palm_position[2]
-
-        if xPalm <= -90:
+        if Palm[0] <= -90:
             J1pos = -90
             dxl_io.set_goal_position({1: J1pos})
-        elif xPalm >= 90:
+        elif Palm[0] >= 90:
             J1pos = 90
             dxl_io.set_goal_position({1: J1pos})
         else:
-            J1pos = (-xPalm) // 1
+            J1pos = (-Palm[0]) // 1
             dxl_io.set_goal_position({1: J1pos})
         print(J1pos)        
 
-        if yPalm <= 45:
-            J2pos = 45
+        if Palm[1] <= 15:
+            J2pos = 90
             dxl_io.set_goal_position({3: J2pos})
-        elif yPalm >= 135:
+        elif Palm[1] >= 120:
             J2pos = 0
             dxl_io.set_goal_position({3: J2pos})
         else:
-            J2pos = (135 - yPalm) // 1
+            J2pos = (120 - Palm[1]) // 1
             dxl_io.set_goal_position({3: J2pos})
         print(J2pos)
 
-        if zPalm <= -90:
+        if Palm[2] <= -90:
             J3pos = -90
             dxl_io.set_goal_position({5: J3pos})
-        elif zPalm >= 90:
+        elif Palm[2] >= 90:
             J3pos = 90
             dxl_io.set_goal_position({5: J3pos})
         else:
-            J3pos = zPalm // 1
+            J3pos = Palm[2] // 1
             dxl_io.set_goal_position({5: J3pos})
         print(J3pos)
-
-
-
-
-        # for gesture in frame.gestures():
-        #     if gesture.type == Leap.Gesture.TYPE_CIRCLE:
-        #         circle = CircleGesture(gesture)
-
-        #         # Determine clock direction using the angle between the pointable and the circle normal
-        #         if circle.pointable.direction.angle_to(circle.normal) <= Leap.PI/2:
-        #             clockwiseness = "clockwise"
-        #             dxl_io.set_goal_position({1: 0})
-        #             dxl_io.set_goal_position({3: 90})
-        #             dxl_io.set_goal_position({5: 90})
-        #             dxl_io.set_goal_position({7: 90})
-
-        #         else:
-        #             clockwiseness = "counterclockwise"
-        #             dxl_io.set_goal_position({1: 0})
-        #             dxl_io.set_goal_position({3: 0})
-        #             dxl_io.set_goal_position({5: 0})
-        #             dxl_io.set_goal_position({7: 0})
-
-
-
 
         hand = frame.hands
         HandsNum = len(frame.hands)
