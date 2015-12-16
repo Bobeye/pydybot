@@ -1,1 +1,5 @@
-Controlling the 4-DOF robot arm with gestures and hand motions with Leap Motion.
+Here are applications associated with LeapMotion
+
+PalmControl.py is using the palm motion to control a 4-DOF robot
+
+KalmanFilter.py shows the kalman filter appllied on data collected through LeapMotion
