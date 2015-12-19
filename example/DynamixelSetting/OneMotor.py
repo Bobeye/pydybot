@@ -56,6 +56,10 @@ data.pop(0)
 data.pop(0)
 flist.pop(0)
 
+for i in list(0, len(data)):
+	data[i] = data[i] / 1023 * 5
+
+
 print(data)
 print(flist)
 
