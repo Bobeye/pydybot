@@ -16,21 +16,16 @@ int vol, temp;
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  vol = analogRead(A5);
-  temp = vol;
+  temp = 0;
 }
 
 void loop() {
-  vol = analogRead(A2);
-  if (vol == temp) {
-    temp = vol;
+  vol = analogRead(A3);
+  
     Serial.print(vol);
     Serial.print("\n");
-  }
-  else {
-    temp = vol;
-    Serial.print(vol);
-    Serial.print("\n");
-  }
+
+  
+
 }
 
