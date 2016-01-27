@@ -21,7 +21,6 @@ void setup() {
 
 void loop() {
   vol = analogRead(A3);
-  
     Serial.print(vol);
     Serial.print("\n");
 

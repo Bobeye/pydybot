@@ -49,17 +49,17 @@ def updown(pos):
 		dxl_io.set_goal_position({i: -currentPos})
 
 
-currentPos = 20
+currentPos = 0
 for i in leftMotors:
 	dxl_io.set_goal_position({i: currentPos})
 for i in rightMotors:
 	dxl_io.set_goal_position({i: -currentPos})
 
-for i in list(range(30)):
-	updown(38)
-	time.sleep(0.5)
-	updown(-8)
-	time.sleep(0.5)
+# for i in list(range(30)):
+# 	updown(20)
+# 	time.sleep(0.2)
+# 	updown(-8)
+# 	time.sleep(0.2)
 
 
 
