@@ -18,40 +18,41 @@ print(Motors)
 
 
 for i in Motors:
-	dxl_io.set_moving_speed({i: 4})
+	dxl_io.set_moving_speed({i: 10})
 
 
 
-def ServoMove(MotorPos):
-		dxl_io.set_goal_position({1: -MotorPos[1]})
-		dxl_io.set_goal_position({2: MotorPos[2]})
-		dxl_io.set_goal_position({3: -MotorPos[3]})
-		dxl_io.set_goal_position({4: MotorPos[4]})
-		dxl_io.set_goal_position({5: -MotorPos[5]})
-		dxl_io.set_goal_position({6: MotorPos[0]})
+# def ServoMove(MotorPos):
+# 		dxl_io.set_goal_position({1: -MotorPos[1]})
+# 		dxl_io.set_goal_position({2: MotorPos[2]})
+# 		dxl_io.set_goal_position({3: -MotorPos[3]})
+# 		dxl_io.set_goal_position({4: MotorPos[4]})
+# 		dxl_io.set_goal_position({5: -MotorPos[5]})
+# 		dxl_io.set_goal_position({6: MotorPos[0]})
 
-MotorPosa = range(6)
-for i in range(6):
-	MotorPosa[i] = 10
-MotorPosb = range(6)
-for i in range(6):
-	MotorPosb[i] = 30
+# MotorPosa = range(6)
+# for i in range(6):
+# 	MotorPosa[i] = 10
+# MotorPosb = range(6)
+# for i in range(6):
+# 	MotorPosb[i] = 30
 
-ServoMove(MotorPosa)
-start = time.time()
-for i in range(3):
-	ServoMove(MotorPosb)
-	time.sleep(5)
-	ServoMove(MotorPosa)
-	time.sleep(5)
-end = time.time()
+# ServoMove(MotorPosa)
+# start = time.time()
+# for i in range(3):
+# 	ServoMove(MotorPosb)
+# 	time.sleep(5)
+# 	ServoMove(MotorPosa)
+# 	time.sleep(5)
+# end = time.time()
 
-gap = end - start
+# gap = end - start
 
-print('gap:', gap)
+# print('gap:', gap)
 
 
 
+print(range(3,6))
 
 
 

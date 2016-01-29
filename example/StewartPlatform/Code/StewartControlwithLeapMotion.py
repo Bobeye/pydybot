@@ -1,7 +1,12 @@
+import sys
+sys.path.insert(0, "/home/poopeye/pydybot/Packages/LeapSDK/lib")
+import Leap, sys, thread, time
+from Leap import CircleGesture, KeyTapGesture, ScreenTapGesture, SwipeGesture
 import itertools
 import time
 import pypot.dynamixel
 import math
+
 
 # Motor configuration
 ports = pypot.dynamixel.get_available_ports()
@@ -40,6 +45,51 @@ leftMotors.pop(0)
 rightMotors.pop(0)
 print('left set of motors:', leftMotors)
 print('right set of motors:', rightMotors)
+
+
+
+class SampleListener(Leap.Listener):
+    finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
+    bone_names = ['Metacarpal', 'Proximal', 'Intermediate', 'Distal']
+    state_names = ['STATE_INVALID', 'STATE_START', 'STATE_UPDATE', 'STATE_END']
+
+    def on_init(self, controller):
+        print "Leap Motion Initialized..."
+
+    def on_connect(self, controller):
+        print "Leap Motion Connected"
+
+        # Enable gestures
+        controller.enable_gesture(Leap.Gesture.TYPE_CIRCLE);
+        controller.enable_gesture(Leap.Gesture.TYPE_KEY_TAP);
+        controller.enable_gesture(Leap.Gesture.TYPE_SCREEN_TAP);
+        controller.enable_gesture(Leap.Gesture.TYPE_SWIPE);
+
+    def on_disconnect(self, controller):
+        # Note: not dispatched when running in a debugger.
+        print "Disconnected"
+
+    def on_exit(self, controller):
+        print "Exited"
+
+    def on_frame(self, controller):
+        # Get the most recent frame and report some basic information
+        frame = controller.frame()
+
+    def state_string(self, state):
+        if state == Leap.Gesture.STATE_START:
+            return "STATE_START"
+
+        if state == Leap.Gesture.STATE_UPDATE:
+            return "STATE_UPDATE"
+
+        if state == Leap.Gesture.STATE_STOP:
+            return "STATE_STOP"
+
+        if state == Leap.Gesture.STATE_INVALID:
+            return "STATE_INVALID"
+
+
 
 # Move the servos to desired angle position
 def SERVOMOVE(MotorPos,Period):
@@ -88,7 +138,7 @@ def SERVOMOVE(MotorPos,Period):
 
 def ZEROTOPPLATE():
 	zeroTop = STEWARTCONTROL([0,0,0,0,0,0])
-	SERVOMOVE(zeroTop,1)
+	SERVOMOVE(zeroTop,0.1)
 	time.sleep(2)
 
 def STEWARTCONTROL(StewartControlParameters): # [xdelta, ydelta, zdelta, xangle, yangle, zangle]
@@ -284,109 +334,119 @@ def STEWARTCONTROL(StewartControlParameters): # [xdelta, ydelta, zdelta, xangle,
 
 	return tempmotorPos
 
+
+def PALMTOSTEWART(palm):
+	for i in range(3,6):
+		palm[i] = math.radians(palm[i])
+	deltaX = palm[0]
+	deltaY = palm[1]
+	deltaZ = palm[2]
+	angleX = palm[3]
+	angleY = palm[4]
+	angleZ = palm[5]
+	rangedx = 200
+	rangedy = 90
+	rangedz = 200
+	if deltaX > rangedx:
+		deltaX = rangedx
+	elif deltaX < -rangedx:
+		deltaX = -rangedx
+	if deltaY > rangedy:
+		deltaY = rangedy
+	elif deltaY < -rangedy:
+		deltaY = -rangedy
+	if deltaZ > rangedz:
+		deltaZ = rangedz
+	elif deltaZ < -rangedz:
+		deltaZ = -rangedz
+	# STEWART RANGE
+	rangesx = 20
+	rangesy = 20
+	rangesz = 50
+	rangesaxy = 0
+	rangesaz = 0
+	if angleX >= rangesaxy:
+		angelX = rangesaxy
+	elif angleX < -rangesaxy:
+		angelX = -rangesaxy
+	if angleY >= rangesaxy:
+		angelY = rangesaxy
+	elif angleY < -rangesaxy:
+		angelY = -rangesaxy
+	if angleZ >= rangesaz:
+		angelZ = rangesaz
+	elif angleZ < -rangesaz:
+		angelZ = -rangesaz
+	deltaX = deltaX * rangesx / rangedx
+	deltaY = deltaY * rangesy / rangedy
+	deltaZ = (deltaZ-100) * rangesz / rangedz
+	Outpalm = [deltaX, deltaY, deltaZ, 0, 0, 0]
+	return Outpalm
+
+
 ######################################################################################
-
-# define the movement corresponding to Asin(2*pi*f*T+phi) on 6 DOF range
-def SINMOTION(sinMotionMatrix, TimePeriod):  #[[A, f, phi] * 6], Total running time
-	SampleTime = 0.01
-
-	A = range(6)
-	f = range(6)
-	w = range(6)
-	phi = range(6)
-	T = range(6)
-	for i in range(6):
-		A[i] = sinMotionMatrix[i][0]	# Amplitude
-		f[i] = sinMotionMatrix[i][1]	# Frequency
-		phi[i] = sinMotionMatrix[i][2]	# Time shift
-		w[i] = 2 * math.pi * f[i]
-		T[i] = 1 / f[i]					# Period time
-
-	def SinStartPosition():
-		SinStartPosition = range(6)
-		for i in range(6):
-			SinStartPosition[i] = A[i] * math.sin(phi[i])
-		SinStartServo = STEWARTCONTROL(SinStartPosition)
-		SERVOMOVE(SinStartServo, 2)
-		LastMotorPos = SinStartServo
-		print('sin motion ready>>>>>>>>>>>>>>>>>>')
-		time.sleep(1)
-		print('GO!')
-
-	SinStartPosition()
-	CurrentAimPosition = range(6)
-	for i in range(6):
-		CurrentAimPosition[i] = A[i] * math.sin(phi[i])
-	TimeStart = time.time()
-	TimeLast = time.time()
-	TimePass = 0
-	while TimePass <= TimePeriod:
-		TimeCurrent = time.time()
-		TimeGap = TimeCurrent - TimeLast
-		TimePass = TimeCurrent - TimeStart
-		if TimeGap >= SampleTime:
-			TimeLast = TimeCurrent
-			for i in range(6):
-				CurrentAimPosition[i] = A[i] * math.sin(w[i] * TimePass + phi[i])
-			CurrentAimMotor = STEWARTCONTROL(CurrentAimPosition)
-			SERVOMOVE(CurrentAimMotor, TimeLast + SampleTime - time.time())
-			LastMotorPos = CurrentAimMotor
-		
 
 
 
 def main():
 	ZEROSERVO()
-	tempshakeMatrix = [[0.0,1.0,0.0] , [9.0,0.08,(math.pi)/2] , [16.6,0.08,0.0] ,
-					   [0.20,0.08,(math.pi)/2] , [0.0,1.0,0] , [0.0,1.0,0] ]
-	# tempshakeMatrix = [[0.0,1.0,0.0] , [9.0,0.15,(math.pi)/2] , [9.6,0.15,0.0] ,
-	# 				   [0.12,0.15,(math.pi)/2] , [0.0,1.0,0] , [0.0,1.0,0] ]
-	# tempshakeMatrix = [[0.0,1.0,0.0] , [9.0,0.5,(math.pi)/2] , [2.6,0.5,0.0] ,
-	# 				   [0.03,0.5,(math.pi)/2] , [0.0,1.0,0] , [0.0,1.0,0] ]
+	# Create a sample listener and controller
+	listener = SampleListener()
+	controller = Leap.Controller()
 
-	# tempshakeMatrix = [[9.0,0.5,(math.pi)/2] , [0.0,1.0,0.0] , [2.6,0.5,0.0] ,
-	# 				   [0.0,1.0,0] , [0.03,0.5,(math.pi)/2] , [0.0,1.0,0] ]
+	SampleTime = 0.02
+	LastTime = time.time()
+	HandsNum = 0
+	while HandsNum != 2:
+		CurrentTime = time.time()
+		if CurrentTime-LastTime >=SampleTime:
+			LastTime = CurrentTime
+	    	# Have the sample listener receive events from the controller    
+			xPalm = 0
+			yPalm = 0
+			zPalm = 0
+			pitchPalm = 0
+			rollPalm = 0
+			yawPalm = 0
+			controller.add_listener(listener)
+			frame = controller.frame()
+			for hand in frame.hands:
+				# Get the hand's normal vector and direction
+				normal = hand.palm_normal
+				direction = hand.direction
+				xPalm = hand.palm_position[0]
+				yPalm = hand.palm_position[1]
+				zPalm = hand.palm_position[2]
+				pitchPalm = direction.pitch * Leap.RAD_TO_DEG
+				rollPalm = normal.roll * Leap.RAD_TO_DEG
+				yawPalm = direction.yaw * Leap.RAD_TO_DEG
+			PalmDirection = [pitchPalm, rollPalm, yawPalm]
+			# print('Palm Direction: ', PalmDirection)
+			PalmPos = [xPalm, yPalm, zPalm]
+			# print('Palm Position: ', PalmPos)
+			HandsNum = len(frame.hands)
+			Palm = [zPalm, xPalm, yPalm, pitchPalm, rollPalm, -yawPalm] # revise the direction corresponding to the stewart's top
+			PalmtoStewart = PALMTOSTEWART(Palm)
+			print(PalmtoStewart)
+			PalmServo = STEWARTCONTROL(PalmtoStewart)
+			print(PalmServo)
+			ServoTime = time.time()
+			SERVOMOVE(PalmServo, SampleTime-(ServoTime-LastTime))
+			LastMotorPos = PalmServo
 
-	# tempshakeMatrix = [[0.0,0.5,0.0] , [0.0,1.0,0.0] , [0.0,0.5,0.0] ,
-	#  				   [0.0,1.0,0] , [0.0,1.0,0] , [0.3,0.15,0] ]
 
 
-	# tempshakeMatrix = [[0.0,0.5,0.0] , [0.0,1.0,0.0] , [12.0,5.0,0.0] ,
-	#  				   [0.0,1.0,0] , [0.0,1.0,0] , [0.0,2.0,0] ]
+	# Keep this process running until Enter is pressed
+	print "Press Enter to quit..."
+	try:
+		sys.stdin.readline()
+	except KeyboardInterrupt:
+		pass
+	finally:
+		# Remove the sample listener when done
+		controller.remove_listener(listener)
 
 
-
-	SINMOTION(tempshakeMatrix, 50)
-	ZEROSERVO()
-	
-	# temp = [0,0,0.0,0,0,0.3]
-	# print(STEWARTCONTROL(temp))
-	
-
-
-
-
-# tempstewart = STEWARTCONTROL([0,0,0,0,0,0])
-# SERVOMOVE(tempstewart,1)
-# time.sleep(1)
-
-# for i in range(3):
-# 	tempstewart = STEWARTCONTROL([0,0,5,0,0,0])
-# 	SERVOMOVE(tempstewart,1)
-# 	LastMotorPos = tempstewart
-# 	time.sleep(1.001)
-# 	tempstewart = STEWARTCONTROL([0,0,-5,0,0,0])
-# 	SERVOMOVE(tempstewart,1)
-# 	LastMotorPos = tempstewart
-# 	time.sleep(1.001)
-
-
-
-# ZEROTOPPLATE()
-# print('ZEROTOP')
-time.sleep(1)
-start = time.time()
-main()
-end = time.time()
-print('Programming running time: ', end-start)
-
+if __name__ == "__main__":
+    main()
+    ZEROSERVO()

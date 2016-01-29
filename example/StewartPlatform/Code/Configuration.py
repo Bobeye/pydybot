@@ -16,7 +16,7 @@ BottomCoordinates = [[BottomRadius * math.cos(BottomAngle), -BottomRadius * math
 					 [-BottomRadius * math.sin(math.radians(30)+BottomAngle), BottomRadius * math.cos(math.radians(30)+BottomAngle), 0],
 					 [-BottomRadius * math.sin(math.radians(30)+BottomAngle), -BottomRadius * math.cos(math.radians(30)+BottomAngle), 0],
 					 [-BottomRadius * math.sin(math.radians(30)-BottomAngle), -BottomRadius * math.cos(math.radians(30)-BottomAngle), 0]]
-# print(BottomCoordinates)
+print('BottomCoordinates',BottomCoordinates)
 # Initial Servo Coordinates Setup
 MotorCoordinates = BottomCoordinates
 for i in range(6):
