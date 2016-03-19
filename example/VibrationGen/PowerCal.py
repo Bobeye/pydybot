@@ -1,16 +1,16 @@
 import itertools
 import time
-import pypot.dynamixel
 import numpy as np
 import matplotlib.pyplot as plt
 import random
 import serial
-ardu = serial.Serial('/dev/ttyUSB0', 115200)
+ardu = serial.Serial('/dev/ttyUSB2', 115200)
 a = ardu.readline()
 alist = [a]
-plist = [0]
+ansplist = [0]
+ampyplist = [0]
 sump = 0
-R = 10
+R = 33000
 period = 0
 
 start = time.time()
@@ -39,47 +39,75 @@ except KeyboardInterrupt:
 	# print(alist)
 
 	data = [0]
-	for i in range(len(alist)):
+	for i in range(len(alist)-2):
 		data.append(alist[i].strip('\n'))
 	data.pop(0)
 	data.pop(0)
 
+	ans = [0]
+	ampy = [0]
+	for i in range(len(data)-2):
+		if data[i] == 'ans':
+			ans.append(data[i+1])
+		if data[i] == 'ampy':
+			ampy.append(data[i+1])
+	ans.pop(0)
+	ampy.pop(0)
+	print(ans)
+	print(ampy)
+
 
 	# voltage calculation
-	for i in range(0, len(data)):
-		data[i] = float(data[i]) / 1023 * 5
-	# print(data)
+	for i in range(0, len(ans)):
+		ans[i] = float(ans[i]) / 1023 * 5
+	for i in range(0, len(ampy)):
+		ampy[i] = float(ampy[i]) / 1023 * 5
+	print(ans)
+	print(ampy)
 
 	# power calculation
-	for i in range(0, len(data)):
-		power = data[i] * data[i] / R
-		plist.append(power)
-	plist.pop(0)
+	for i in range(0, len(ans)):
+		anspower = ans[i] * ans[i] / R
+		ansplist.append(anspower)
+	ansplist.pop(0)
+	for i in range(0, len(ampy)):
+		ampypower = ampy[i] * ampy[i] / R
+		ampyplist.append(ampypower)
+	ampyplist.pop(0)
 
 	# Final result
-	for i in range(0, len(plist)):
-		sump = sump + plist[i]
-	AvePower = (sump / len(plist)) * 1000
-	print("Average power is:", AvePower, "mW")
-	print("Working time:", period, "s")
-	Energy = AvePower * period
-	print("total energy:", Energy, 'mJ')
+	sump = 0
+	for i in range(0, len(ansplist)):
+		sump = sump + ansplist[i]
+	ansAvePower = (sump / len(ansplist)) * 100000
+	print("18650 Average power is:", ansAvePower, "mW")
+	sump = 0
+	for i in range(0, len(ampyplist)):
+		sump = sump + ampyplist[i]
+	ampyAvePower = (sump / len(ampyplist)) * 1000
+	print("Ampy Average power is:", ampyAvePower, "mW")
 
 
-	# plotting
-	plt.figure(1)               # the first figure
-	plt.title('ANSWENERGY VIBRATION TEST')
 
-	plt.subplot(211)
-	plt.grid(True) 
-	plt.ylabel('Voltage')
-	dataLine = plt.plot(data)
-	plt.setp(dataLine, color='g', linewidth=2.0)
+	# print("Working time:", period, "s")
+	# Energy = AvePower * period
+	# print("total energy:", Energy, 'mJ')
 
-	plt.subplot(212)
-	plt.grid(True) 
-	plt.ylabel('Power')
-	flistLine = plt.plot(plist)
-	plt.setp(flistLine, color='r', linewidth=2.0)
 
-	plt.show()
+	# # plotting
+	# plt.figure(1)               # the first figure
+	# plt.title('ANSWENERGY VIBRATION TEST')
+
+	# plt.subplot(211)
+	# plt.grid(True) 
+	# plt.ylabel('Voltage')
+	# dataLine = plt.plot(data)
+	# plt.setp(dataLine, color='g', linewidth=2.0)
+
+	# plt.subplot(212)
+	# plt.grid(True) 
+	# plt.ylabel('Power')
+	# flistLine = plt.plot(plist)
+	# plt.setp(flistLine, color='r', linewidth=2.0)
+
+	# plt.show()

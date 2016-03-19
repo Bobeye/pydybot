@@ -11,7 +11,7 @@
 //        Serial.print("\n");
 //}
 
-int vol, temp;
+int volans, volampy, temp;
 
 void setup() {
   Serial.begin(115200);
@@ -20,9 +20,17 @@ void setup() {
 }
 
 void loop() {
-  vol = analogRead(A3);
-    Serial.print(vol);
+  volans = analogRead(A3);
+  volampy = analogRead(A5);
+    Serial.print("ans");
     Serial.print("\n");
+    Serial.print(volans);
+    Serial.print("\n");
+    Serial.print("ampy");
+    Serial.print("\n");
+    Serial.print(volampy);
+    Serial.print("\n");
+    
 
   
 

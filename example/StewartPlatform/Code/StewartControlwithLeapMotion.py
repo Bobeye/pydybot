@@ -335,6 +335,56 @@ def STEWARTCONTROL(StewartControlParameters): # [xdelta, ydelta, zdelta, xangle,
 	return tempmotorPos
 
 
+######################################################################################
+# define the movement corresponding to Asin(2*pi*f*T+phi) on 6 DOF range
+def SINMOTION(sinMotionMatrix, TimePeriod):  #[[A, f, phi] * 6], Total running time
+	SampleTime = 0.01
+
+	A = range(6)
+	f = range(6)
+	w = range(6)
+	phi = range(6)
+	T = range(6)
+	for i in range(6):
+		A[i] = sinMotionMatrix[i][0]	# Amplitude
+		f[i] = sinMotionMatrix[i][1]	# Frequency
+		phi[i] = sinMotionMatrix[i][2]	# Time shift
+		w[i] = 2 * math.pi * f[i]
+		T[i] = 1 / f[i]					# Period time
+
+	def SinStartPosition():
+		SinStartPosition = range(6)
+		for i in range(6):
+			SinStartPosition[i] = A[i] * math.sin(phi[i])
+		SinStartServo = STEWARTCONTROL(SinStartPosition)
+		SERVOMOVE(SinStartServo, 2)
+		LastMotorPos = SinStartServo
+		print('stewart wave motion ready>>>>>>>>>>>>>>>>>>')
+		for i in range(3):
+			print(3-i)
+			time.sleep(1)
+		print('GO!')
+
+	SinStartPosition()
+	CurrentAimPosition = range(6)
+	for i in range(6):
+		CurrentAimPosition[i] = A[i] * math.sin(phi[i])
+	TimeStart = time.time()
+	TimeLast = time.time()
+	TimePass = 0
+	while TimePass <= TimePeriod:
+		TimeCurrent = time.time()
+		TimeGap = TimeCurrent - TimeLast
+		TimePass = TimeCurrent - TimeStart
+		if TimeGap >= SampleTime:
+			TimeLast = TimeCurrent
+			for i in range(6):
+				CurrentAimPosition[i] = A[i] * math.sin(w[i] * TimePass + phi[i])
+			CurrentAimMotor = STEWARTCONTROL(CurrentAimPosition)
+			SERVOMOVE(CurrentAimMotor, TimeLast + SampleTime - time.time())
+			LastMotorPos = CurrentAimMotor
+
+
 def PALMTOSTEWART(palm):
 	for i in range(3,6):
 		palm[i] = math.radians(palm[i])
@@ -360,9 +410,9 @@ def PALMTOSTEWART(palm):
 	elif deltaZ < -rangedz:
 		deltaZ = -rangedz
 	# STEWART RANGE
-	rangesx = 20
-	rangesy = 20
-	rangesz = 50
+	rangesx = 10
+	rangesy = 10
+	rangesz = 100
 	rangesaxy = 0
 	rangesaz = 0
 	if angleX >= rangesaxy:
@@ -385,8 +435,14 @@ def PALMTOSTEWART(palm):
 
 
 ######################################################################################
-
-
+# 6-DOF show
+def DOF():
+	ZEROTOPPLATE()
+	tempshakeMatrix = [[5.0,0.2,(math.pi)/2] , [5.0,0.2,0.0] , [0.0,4,0.0] ,
+	 				   [0.01,0.2,0] , [0.01,0.2,(math.pi)/2] , [0.0,1.0,0] ]
+	SINMOTION(tempshakeMatrix, 10)
+	ZEROTOPPLATE()
+###########################################3
 
 def main():
 	ZEROSERVO()
@@ -397,6 +453,7 @@ def main():
 	SampleTime = 0.02
 	LastTime = time.time()
 	HandsNum = 0
+	order = 0
 	while HandsNum != 2:
 		CurrentTime = time.time()
 		if CurrentTime-LastTime >=SampleTime:
@@ -410,29 +467,38 @@ def main():
 			yawPalm = 0
 			controller.add_listener(listener)
 			frame = controller.frame()
-			for hand in frame.hands:
-				# Get the hand's normal vector and direction
-				normal = hand.palm_normal
-				direction = hand.direction
-				xPalm = hand.palm_position[0]
-				yPalm = hand.palm_position[1]
-				zPalm = hand.palm_position[2]
-				pitchPalm = direction.pitch * Leap.RAD_TO_DEG
-				rollPalm = normal.roll * Leap.RAD_TO_DEG
-				yawPalm = direction.yaw * Leap.RAD_TO_DEG
-			PalmDirection = [pitchPalm, rollPalm, yawPalm]
-			# print('Palm Direction: ', PalmDirection)
-			PalmPos = [xPalm, yPalm, zPalm]
-			# print('Palm Position: ', PalmPos)
 			HandsNum = len(frame.hands)
-			Palm = [zPalm, xPalm, yPalm, pitchPalm, rollPalm, -yawPalm] # revise the direction corresponding to the stewart's top
-			PalmtoStewart = PALMTOSTEWART(Palm)
-			print(PalmtoStewart)
-			PalmServo = STEWARTCONTROL(PalmtoStewart)
-			print(PalmServo)
-			ServoTime = time.time()
-			SERVOMOVE(PalmServo, SampleTime-(ServoTime-LastTime))
-			LastMotorPos = PalmServo
+
+			
+			if HandsNum == 0 and order == 0:
+				DOF()
+				order = 1
+
+			if HandsNum == 1:
+				for hand in frame.hands:
+					# Get the hand's normal vector and direction
+					normal = hand.palm_normal
+					direction = hand.direction
+					xPalm = hand.palm_position[0]
+					yPalm = hand.palm_position[1]
+					zPalm = hand.palm_position[2]
+					pitchPalm = direction.pitch * Leap.RAD_TO_DEG
+					rollPalm = normal.roll * Leap.RAD_TO_DEG
+					yawPalm = direction.yaw * Leap.RAD_TO_DEG
+				PalmDirection = [pitchPalm, rollPalm, yawPalm]
+				# print('Palm Direction: ', PalmDirection)
+				PalmPos = [xPalm, yPalm, zPalm]
+				# print('Palm Position: ', PalmPos)
+				Palm = [zPalm, xPalm, yPalm, pitchPalm, rollPalm, -yawPalm] # revise the direction corresponding to the stewart's top
+				PalmtoStewart = PALMTOSTEWART(Palm)
+				print(PalmtoStewart)
+				PalmServo = STEWARTCONTROL(PalmtoStewart)
+				print(PalmServo)
+				ServoTime = time.time()
+				SERVOMOVE(PalmServo, SampleTime-(ServoTime-LastTime))
+				LastMotorPos = PalmServo
+
+	ZEROTOPPLATE()
 
 
 

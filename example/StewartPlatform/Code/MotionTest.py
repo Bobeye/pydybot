@@ -20,7 +20,7 @@ print(Motors)
 # 	dxl_io.set_moving_speed({i: 100})
 
 for i in Motors:
-	dxl_io.set_goal_position({i: 0})
+	dxl_io.set_goal_position({i: 40})
 	time.sleep(0.01)
 
 # dxl_io.set_goal_position({1: 0})
